@@ -48,3 +48,7 @@ Desktop.ini
 # Test and coverage reports
 .coverage
 htmlcov/
+
+docker/mysql-connector.json
+
+data/
