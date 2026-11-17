@@ -34,12 +34,12 @@ TABLES = {
         "RAW_CDC_ORDER_ITEMS",
     ),
     "vendor_catalog": (
-    Path("data/bronze/vendor_catalog/raw_vendor_catalog.jsonl"),
-    "RAW_VENDOR_CATALOG",
+        Path("data/bronze/vendor_catalog/raw_vendor_catalog.jsonl"),
+        "RAW_VENDOR_CATALOG",
     ),
     "fx_rates": (
-    Path("data/bronze/fx_rates/raw_fx_rates.jsonl"),
-    "RAW_FX_RATES",
+        Path("data/bronze/fx_rates/raw_fx_rates.jsonl"),
+        "RAW_FX_RATES",
     ),
 }
 

@@ -1,4 +1,3 @@
-
 """Ingest exchange rates from Frankfurter API into Bronze JSONL."""
 
 import argparse
@@ -8,9 +7,7 @@ from pathlib import Path
 
 import httpx
 
-DEFAULT_OUTPUT_FILE = Path(
-    "data/bronze/fx_rates/raw_fx_rates.jsonl"
-)
+DEFAULT_OUTPUT_FILE = Path("data/bronze/fx_rates/raw_fx_rates.jsonl")
 
 API_URL = "https://api.frankfurter.dev/v1/latest"
 
@@ -86,19 +83,14 @@ def ingest_fx_rates(output_file: Path = DEFAULT_OUTPUT_FILE) -> dict:
             }
 
             bronze_record = {
-                "_ingested_at": datetime.now(
-                    timezone.utc
-                ).isoformat(),
+                "_ingested_at": datetime.now(timezone.utc).isoformat(),
                 "_source_system": "frankfurter_api",
                 "_batch_id": f"fx_rates_{rate_date}",
                 "raw_payload": raw_payload,
             }
 
             with output_file.open("a", encoding="utf-8") as file:
-                file.write(
-                    json.dumps(bronze_record, ensure_ascii=False)
-                    + "\n"
-                )
+                file.write(json.dumps(bronze_record, ensure_ascii=False) + "\n")
 
             existing_keys.add(key)
             written += 1
@@ -111,9 +103,7 @@ def ingest_fx_rates(output_file: Path = DEFAULT_OUTPUT_FILE) -> dict:
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Ingest FX rates into Bronze"
-    )
+    parser = argparse.ArgumentParser(description="Ingest FX rates into Bronze")
     parser.add_argument(
         "--output-file",
         type=Path,
