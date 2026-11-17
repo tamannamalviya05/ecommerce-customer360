@@ -14,8 +14,8 @@ LOGGER = logging.getLogger(__name__)
 
 TOPICS = (
     "ecommerce.ecommerce.customers",
-    "ecommerce.ecommerce.products",
     "ecommerce.ecommerce.orders",
+    "ecommerce.ecommerce.order_items",
 )
 
 EventIdentity = tuple[str, int, int]
@@ -36,17 +36,34 @@ def normalize_decimal_fields(record: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(payload, dict):
         return normalized
 
+    payload = dict(payload)
+
+    decimal_fields = (
+        "price",
+        "total_amount",
+        "unit_price",
+        "discount_amount",
+        "tax_amount",
+        "shipping_amount",
+        "line_total",
+    )
+
     for image in ("after", "before"):
         row = payload.get(image)
+
         if isinstance(row, dict):
             row = dict(row)
-            for field in ("price", "total_amount"):
+
+            for field in decimal_fields:
                 value = row.get(field)
+
                 if isinstance(value, str):
                     row[field] = decode_connect_decimal(value)
+
             payload[image] = row
 
     normalized["payload"] = payload
+
     return normalized
 
 
@@ -173,9 +190,20 @@ def consume(
             append_bronze_record(record, output_dir, seen_event_ids)
 
             # Commit only this partition's next offset, after Bronze persistence.
-            topic_partition = TopicPartition(message.topic, message.partition)
-            consumer.commit(offsets={topic_partition: OffsetAndMetadata(message.offset + 1, "")})
+            topic_partition = TopicPartition(
+                message.topic,
+                message.partition,
+            )
 
+            consumer.commit(
+                offsets={
+                    topic_partition: OffsetAndMetadata(
+                        message.offset + 1,
+                        "",
+                        -1,
+                    )
+                }
+            )
             LOGGER.info("Processed CDC event: %s", record["_batch_id"])
 
     except KeyboardInterrupt:
