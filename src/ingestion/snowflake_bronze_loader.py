@@ -20,7 +20,7 @@ TABLES = {
         "RAW_AD_SPEND",
     ),
     "clickstream": (
-        Path("data/bronze/clickstream/clickstream_events.jsonl"),
+        Path("data/bronze/clickstream/clickstream_20000.jsonl"),
         "RAW_CLICKSTREAM",
     ),
     "mysql_cdc_customers": (
@@ -129,8 +129,8 @@ def load_bronze(source, dry_run=False):
     )
 
     target = f"C360_DEV.BRONZE.{table}"
-    stage = f"@C360_DEV.BRONZE.BRONZE_UPLOAD_STAGE/{source}"
-
+    stage = f"@C360_DEV.BRONZE.BRONZE_UPLOAD_STAGE/{source}/"
+    staged_filename = f"{path.name}.gz"
     staging_key = get_key_expression(source, "s")
     target_key = get_key_expression(source, "t")
 
@@ -161,14 +161,15 @@ def load_bronze(source, dry_run=False):
                 )
                 FROM (
                     SELECT
-                        $1:raw_payload,
-                        TRY_TO_TIMESTAMP_TZ(
-                            $1:_ingested_at::STRING
-                        ),
-                        $1:_source_system::STRING,
-                        $1:_batch_id::STRING
+                       $1:raw_payload,
+                       TRY_TO_TIMESTAMP_TZ(
+                       $1:_ingested_at::STRING
+                      ),
+                      $1:_source_system::STRING,
+                      $1:_batch_id::STRING
                     FROM {stage}
                 )
+                FILES = ('{staged_filename}')
                 FILE_FORMAT = (
                     FORMAT_NAME =
                     'C360_DEV.BRONZE.BRONZE_JSONL_FORMAT'
