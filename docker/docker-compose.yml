@@ -1,5 +1,8 @@
 ﻿
 services:
+  # ==========================================
+  # MYSQL DATABASE
+  # ==========================================
   mysql:
     image: mysql:8.4
     container_name: ecommerce-mysql
@@ -19,11 +22,16 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$${MYSQL_ROOT_PASSWORD}"]
+      test:
+        - CMD-SHELL
+        - mysqladmin ping -h 127.0.0.1 -uroot -p"$${MYSQL_ROOT_PASSWORD}"
       interval: 10s
       timeout: 5s
       retries: 10
 
+  # ==========================================
+  # APACHE KAFKA
+  # ==========================================
   kafka:
     image: quay.io/debezium/kafka:3.3.0.Final
     container_name: ecommerce-kafka
@@ -43,6 +51,9 @@ services:
     volumes:
       - kafka_data:/kafka/data
 
+  # ==========================================
+  # DEBEZIUM KAFKA CONNECT
+  # ==========================================
   connect:
     image: quay.io/debezium/connect:3.3.0.Final
     container_name: ecommerce-connect
@@ -60,6 +71,152 @@ services:
       STATUS_STORAGE_TOPIC: ecommerce_connect_statuses
       REST_HOST_NAME: 0.0.0.0
 
+  # ==========================================
+  # AIRFLOW POSTGRESQL DATABASE
+  # ==========================================
+  airflow-postgres:
+    image: postgres:16
+    container_name: ecommerce-airflow-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: ${AIRFLOW_DB_PASSWORD}
+      POSTGRES_DB: airflow
+    volumes:
+      - airflow_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U airflow -d airflow
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # ==========================================
+  # AIRFLOW DATABASE INITIALIZATION
+  # ==========================================
+  airflow-init:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.airflow
+    env_file:
+      - ../.env.snowflake
+    environment: &airflow-common-env
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:${AIRFLOW_DB_PASSWORD}@airflow-postgres:5432/airflow
+      AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+      AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW_SECRET_KEY}
+      PYTHONPATH: /opt/airflow/project
+    volumes:
+      - ../airflow/dags:/opt/airflow/dags
+      - airflow_logs:/opt/airflow/logs
+      - ../src:/opt/airflow/project/src:ro
+      - ../data:/opt/airflow/project/data
+    working_dir: /opt/airflow/project
+    depends_on:
+      airflow-postgres:
+        condition: service_healthy
+    command: db migrate
+    restart: "no"
+
+  # ==========================================
+  # AIRFLOW WEBSERVER
+  # ==========================================
+  airflow-webserver:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.airflow
+    container_name: ecommerce-airflow-webserver
+    restart: unless-stopped
+    env_file:
+      - ../.env.snowflake
+    environment: *airflow-common-env
+    ports:
+      - "8085:8080"
+    volumes:
+      - ../airflow/dags:/opt/airflow/dags
+      - airflow_logs:/opt/airflow/logs
+      - ../src:/opt/airflow/project/src:ro
+      - ../data:/opt/airflow/project/data
+    working_dir: /opt/airflow/project
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+    command: webserver
+
+  # ==========================================
+  # AIRFLOW SCHEDULER
+  # ==========================================
+  airflow-scheduler:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.airflow
+    container_name: ecommerce-airflow-scheduler
+    restart: unless-stopped
+    env_file:
+      - ../.env.snowflake
+    environment: *airflow-common-env
+    volumes:
+      - ../airflow/dags:/opt/airflow/dags
+      - airflow_logs:/opt/airflow/logs
+      - ../src:/opt/airflow/project/src:ro
+      - ../data:/opt/airflow/project/data
+    working_dir: /opt/airflow/project
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+    command: scheduler
+
+
+  # ==========================================
+  # MYSQL CDC CONSUMER
+  # ==========================================
+  mysql-cdc-consumer:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.cdc
+    container_name: ecommerce-mysql-cdc-consumer
+    restart: unless-stopped
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      PYTHONPATH: /app
+    volumes:
+      - ../src:/app/src:ro
+      - ../data:/app/data
+    working_dir: /app
+    depends_on:
+      - kafka
+
+
+  # ==========================================
+  # CLICKSTREAM KAFKA CONSUMER
+  # ==========================================
+  clickstream-consumer:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.cdc
+    container_name: ecommerce-clickstream-consumer
+    restart: unless-stopped
+    command:
+      - python
+      - -m
+      - src.ingestion.clickstream_consumer
+      - --bootstrap-servers
+      - kafka:9092
+    environment:
+      PYTHONPATH: /app
+    volumes:
+      - ../src:/app/src:ro
+      - ../data:/app/data
+    working_dir: /app
+    depends_on:
+      - kafka
+
+# ==========================================
+# PERSISTENT DOCKER VOLUMES
+# ==========================================
 volumes:
   mysql_data:
   kafka_data:
+  airflow_postgres_data:
+  airflow_logs:

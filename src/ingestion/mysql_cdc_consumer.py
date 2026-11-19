@@ -5,6 +5,7 @@ from __future__ import annotations
 import base64
 import json
 import logging
+import os
 from datetime import datetime, timezone
 from decimal import Decimal
 from pathlib import Path
@@ -145,12 +146,17 @@ def append_bronze_record(
 
 
 def consume(
-    bootstrap_servers: str = "localhost:29092",
+    bootstrap_servers: str | None = None,
     output_dir: Path = Path("data/bronze/mysql_cdc"),
 ) -> None:
     """Consume CDC messages continuously and append them idempotently to Bronze."""
     from kafka import KafkaConsumer
     from kafka.structs import OffsetAndMetadata, TopicPartition
+
+    bootstrap_servers = bootstrap_servers or os.getenv(
+        "KAFKA_BOOTSTRAP_SERVERS",
+        "localhost:29092",
+    )
 
     seen_event_ids = load_existing_event_ids(output_dir)
     LOGGER.info("Loaded %s existing Bronze event identities", len(seen_event_ids))
