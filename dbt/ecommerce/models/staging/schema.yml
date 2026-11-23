@@ -1,0 +1,299 @@
+
+version: 2
+
+models:
+  - name: stg_customers
+    description: "Cleaned and deduplicated customer records from MySQL CDC"
+
+    columns:
+      - name: CUSTOMER_ID
+        data_tests:
+          - unique
+          - not_null
+
+      - name: FIRST_NAME
+        data_tests:
+          - not_null
+
+      - name: LAST_NAME
+        data_tests:
+          - not_null
+
+      - name: EMAIL
+        data_tests:
+          - not_null
+
+      - name: CREATED_AT
+        data_tests:
+          - not_null
+
+      - name: UPDATED_AT
+        data_tests:
+          - not_null
+
+  - name: stg_orders
+    description: "cleaned and deduplicated orders from MySQL CDC"
+
+    columns:
+     - name: ORDER_ID
+       data_tests:
+        - unique
+        - not_null
+
+     - name: CUSTOMER_ID
+       data_tests:
+        - not_null
+
+     - name: ORDER_STATUS
+       data_tests:
+        - not_null
+     
+     - name: TOTAL_AMOUNT
+       data_tests:
+        - not_null
+     
+     - name: CREATED_AT
+       data_tests:
+        - not_null
+     
+     - name: UPDATED_AT
+       data_tests:
+        - not_null
+
+  
+  - name: stg_order_items
+    description: "Cleaned and deduplicated order items from MySQL CDC."
+
+    columns:
+      - name: ORDER_ITEM_ID
+        data_tests:
+          - unique
+          - not_null
+
+      - name: ORDER_ID
+        data_tests:
+          - not_null
+
+      - name: PRODUCT_ID
+        data_tests:
+          - not_null
+
+      - name: QUANTITY
+        data_tests:
+          - not_null
+
+      - name: UNIT_PRICE
+        data_tests:
+          - not_null
+
+      - name: LINE_TOTAL
+        data_tests:
+          - not_null
+
+      - name: CREATED_AT
+        data_tests:
+          - not_null
+
+      - name: UPDATED_AT
+        data_tests:
+          - not_null
+  
+  - name: stg_payments
+    description: "Cleaned and deduplicated payment API records."
+
+    columns:
+      - name: PAYMENT_ID
+        data_tests:
+          - unique
+          - not_null
+
+      - name: ORDER_ID
+        data_tests:
+          - not_null
+
+      - name: CUSTOMER_ID
+        data_tests:
+          - not_null
+
+      - name: AMOUNT
+        data_tests:
+          - not_null
+
+      - name: CURRENCY
+        data_tests:
+          - not_null
+
+      - name: PAYMENT_METHOD
+        data_tests:
+          - not_null
+
+      - name: PAYMENT_STATUS
+        data_tests:
+          - not_null
+
+      - name: TRANSACTION_TIMESTAMP
+        data_tests:
+          - not_null
+
+ 
+  - name: stg_clickstream
+    description: "Cleaned and deduplicated Kafka clickstream events."
+
+    columns:
+      - name: EVENT_ID
+        data_tests:
+          - unique
+          - not_null
+
+      - name: SESSION_ID
+        data_tests:
+          - not_null
+
+      - name: CUSTOMER_ID
+        data_tests:
+          - not_null
+
+      - name: EVENT_TYPE
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - page_view
+                  - product_view
+                  - add_to_cart
+                  - remove_from_cart
+                  - checkout_started
+                  - purchase
+
+      - name: EVENT_TIMESTAMP
+        data_tests:
+          - not_null
+
+      - name: DEVICE_TYPE
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - desktop
+                  - mobile
+                  - tablet
+  
+
+  - name: stg_vendor_catalog
+    description: "Cleaned and deduplicated vendor product catalog."
+
+    columns:
+      - name: PRODUCT_ID
+        data_tests:
+          - unique
+          - not_null
+
+      - name: SKU
+        data_tests:
+          - unique
+          - not_null
+
+      - name: PRODUCT_NAME
+        data_tests:
+          - not_null
+
+      - name: VENDOR_ID
+        data_tests:
+          - not_null
+
+      - name: BRAND
+        data_tests:
+          - not_null
+
+      - name: CATEGORY
+        data_tests:
+          - not_null
+
+      - name: CURRENCY
+        data_tests:
+          - not_null
+
+      - name: LIST_PRICE
+        data_tests:
+          - not_null
+
+      - name: STOCK_QUANTITY
+        data_tests:
+          - not_null
+
+      - name: UPDATED_AT
+        data_tests:
+          - not_null
+  
+
+  - name: stg_ad_spend
+    description: "Cleaned and deduplicated advertising spend records."
+
+    columns:
+      - name: SPEND_ID
+        data_tests:
+          - unique
+          - not_null
+
+      - name: CAMPAIGN_ID
+        data_tests:
+          - not_null
+
+      - name: CAMPAIGN_NAME
+        data_tests:
+          - not_null
+
+      - name: CHANNEL
+        data_tests:
+          - not_null
+
+      - name: SPEND_DATE
+        data_tests:
+          - not_null
+
+      - name: SPEND_AMOUNT
+        data_tests:
+          - not_null
+
+      - name: CURRENCY
+        data_tests:
+          - not_null
+
+      - name: IMPRESSIONS
+        data_tests:
+          - not_null
+
+      - name: CLICKS
+        data_tests:
+          - not_null
+
+      - name: CONVERSIONS
+        data_tests:
+          - not_null
+  
+  - name: stg_fx_rates
+    description: "Validated and deduplicated historical FX rates."
+
+    columns:
+      - name: FX_RATE_KEY
+        data_tests:
+          - unique
+          - not_null
+
+      - name: BASE_CURRENCY
+        data_tests:
+          - not_null
+
+      - name: QUOTE_CURRENCY
+        data_tests:
+          - not_null
+
+      - name: EXCHANGE_RATE
+        data_tests:
+          - not_null
+
+      - name: RATE_DATE
+        data_tests:
+          - not_null

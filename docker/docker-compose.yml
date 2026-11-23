@@ -111,6 +111,8 @@ services:
       - ../airflow/dags:/opt/airflow/dags
       - airflow_logs:/opt/airflow/logs
       - ../src:/opt/airflow/project/src:ro
+      - ../dbt/ecommerce:/opt/airflow/dbt/ecommerce:ro
+      - ${USERPROFILE}/.dbt/profiles.yml:/opt/airflow/.dbt/profiles.yml:ro
       - ../data:/opt/airflow/project/data
     working_dir: /opt/airflow/project
     depends_on:
@@ -137,6 +139,8 @@ services:
       - ../airflow/dags:/opt/airflow/dags
       - airflow_logs:/opt/airflow/logs
       - ../src:/opt/airflow/project/src:ro
+      - ../dbt/ecommerce:/opt/airflow/dbt/ecommerce:ro
+      - ${USERPROFILE}/.dbt/profiles.yml:/opt/airflow/.dbt/profiles.yml:ro
       - ../data:/opt/airflow/project/data
     working_dir: /opt/airflow/project
     depends_on:
@@ -160,6 +164,8 @@ services:
       - ../airflow/dags:/opt/airflow/dags
       - airflow_logs:/opt/airflow/logs
       - ../src:/opt/airflow/project/src:ro
+      - ../dbt/ecommerce:/opt/airflow/dbt/ecommerce:ro
+      - ${USERPROFILE}/.dbt/profiles.yml:/opt/airflow/.dbt/profiles.yml:ro
       - ../data:/opt/airflow/project/data
     working_dir: /opt/airflow/project
     depends_on:

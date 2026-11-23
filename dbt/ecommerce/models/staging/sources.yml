@@ -1,0 +1,31 @@
+version: 2
+
+sources:
+  - name: bronze
+    database: C360_DEV
+    schema: BRONZE
+
+    tables:
+      - name: raw_cdc_customers
+        identifier: RAW_CDC_CUSTOMERS
+
+      - name: raw_cdc_orders
+        identifier: RAW_CDC_ORDERS
+
+      - name: raw_cdc_order_items
+        identifier: RAW_CDC_ORDER_ITEMS
+
+      - name: raw_payments
+        identifier: RAW_PAYMENTS
+
+      - name: raw_clickstream
+        identifier: RAW_CLICKSTREAM
+
+      - name: raw_vendor_catalog
+        identifier: RAW_VENDOR_CATALOG
+
+      - name: raw_ad_spend
+        identifier: RAW_AD_SPEND
+
+      - name: raw_fx_rates
+        identifier: RAW_FX_RATES
