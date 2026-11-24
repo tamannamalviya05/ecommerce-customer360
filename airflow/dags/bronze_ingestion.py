@@ -1,8 +1,17 @@
 """Orchestrate E-commerce Bronze ingestion into Snowflake."""
 
+import os
 from datetime import datetime
 
 from airflow.decorators import dag, task
+from airflow.exceptions import AirflowFailException
+from airflow.models.param import Param
+
+ENVIRONMENT_DATABASES = {
+    "dev": "C360_DEV",
+    "test": "C360_TEST",
+    "prod": "C360_PROD",
+}
 
 SOURCES = [
     "payments",
@@ -22,9 +31,39 @@ SOURCES = [
     schedule=None,
     catchup=False,
     max_active_runs=1,
+    params={
+        "environment": Param(
+            default="dev",
+            type="string",
+            enum=["dev", "test", "prod"],
+        ),
+        "confirm_prod": Param(
+            default=False,
+            type="boolean",
+        ),
+    },
     tags=["ecommerce", "bronze", "snowflake"],
 )
 def bronze_ingestion():
+
+    @task
+    def validate_environment(**context):
+        """Validate the selected execution environment."""
+        environment = context["params"]["environment"]
+        confirm_prod = context["params"]["confirm_prod"]
+
+        if environment not in ENVIRONMENT_DATABASES:
+            raise AirflowFailException(f"Unsupported environment: {environment}")
+
+        if environment == "prod" and not confirm_prod:
+            raise AirflowFailException("Production execution requires confirm_prod=true.")
+
+        database = ENVIRONMENT_DATABASES[environment]
+
+        print(f"Environment: {environment}")
+        print(f"Snowflake database: {database}")
+
+        return database
 
     @task
     def ingest_payment_data():
@@ -87,7 +126,7 @@ def bronze_ingestion():
         return result
 
     @task
-    def check_bronze_file(source):
+    def check_bronze_file(source, database):
         from src.ingestion.snowflake_bronze_loader import TABLES
 
         file_path, table = TABLES[source]
@@ -96,20 +135,33 @@ def bronze_ingestion():
             raise FileNotFoundError(file_path)
 
         print(f"Validated: {source}")
-        print(f"Target: C360_DEV.BRONZE.{table}")
+        print(f"Target: {database}.BRONZE.{table}")
 
         return source
 
     @task
-    def load_snowflake_bronze(source):
+    def load_snowflake_bronze(source, database):
         from src.ingestion.snowflake_bronze_loader import load_bronze
 
+        os.environ["SNOWFLAKE_DATABASE"] = database
+
+        print(f"Loading {source} into {database}")
+
         load_bronze(source=source, dry_run=False)
+
+    database = validate_environment()
 
     payments_ingestion = ingest_payment_data()
     ad_spend_ingestion = ingest_ad_spend_data()
     vendor_ingestion = ingest_vendor_catalog_data()
     fx_rates_ingestion = ingest_fx_rates_data()
+
+    database >> [
+        payments_ingestion,
+        ad_spend_ingestion,
+        vendor_ingestion,
+        fx_rates_ingestion,
+    ]
 
     source_dependencies = {
         "payments": payments_ingestion,
@@ -119,9 +171,9 @@ def bronze_ingestion():
     }
 
     for source in SOURCES:
-        validated = check_bronze_file.override(task_id=f"check_{source}")(source)
+        validated = check_bronze_file.override(task_id=f"check_{source}")(source, database)
 
-        load_snowflake_bronze.override(task_id=f"load_{source}")(validated)
+        load_snowflake_bronze.override(task_id=f"load_{source}")(validated, database)
 
         if source in source_dependencies:
             source_dependencies[source] >> validated

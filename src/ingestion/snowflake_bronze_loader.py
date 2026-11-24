@@ -98,16 +98,15 @@ def get_key_expression(source, alias):
     return expression
 
 
-database = os.environ["SNOWFLAKE_DATABASE"].strip().upper()
-
-if database not in {"C360_DEV", "C360_TEST", "C360_PROD"}:
-    raise ValueError(f"Unsupported Snowflake database: {database}")
-
-
 def load_bronze(source, dry_run=False):
     """Stage records and insert only previously unseen keys."""
     if source not in TABLES:
         raise ValueError(f"Unsupported source: {source}")
+
+    database = os.environ["SNOWFLAKE_DATABASE"].strip().upper()
+
+    if database not in {"C360_DEV", "C360_TEST", "C360_PROD"}:
+        raise ValueError(f"Unsupported Snowflake database: {database}")
 
     path, table = TABLES[source]
     path = path.resolve()
