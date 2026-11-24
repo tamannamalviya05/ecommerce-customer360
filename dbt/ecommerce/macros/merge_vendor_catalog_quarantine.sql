@@ -3,7 +3,7 @@
     {% set merge_sql %}
 
         MERGE INTO
-            C360_DEV.QUARANTINE.QUARANTINED_RECORDS AS target
+            {{ target.database }}.QUARANTINE.QUARANTINED_RECORDS AS target
 
         USING (
 
@@ -56,6 +56,9 @@
 
     {% endset %}
 
-    {% do run_query(merge_sql) %}
+    {% if execute %}
+       {% do run_query(merge_sql) %}
+       {{ log("Vendor Catalog quarantine MERGE completed.", info=True) }}
+    {% endif %}
 
 {% endmacro %}

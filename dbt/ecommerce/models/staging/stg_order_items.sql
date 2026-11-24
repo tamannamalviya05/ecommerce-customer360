@@ -73,7 +73,7 @@ WITH extracted AS (
      _INGESTED_AT AS ingested_at,
      _BATCH_ID AS batch_id
 
-    FROM C360_DEV.BRONZE.RAW_CDC_ORDER_ITEMS
+    FROM {{ source('bronze', 'raw_cdc_order_items') }}
 ),
 
 deduplicated AS (

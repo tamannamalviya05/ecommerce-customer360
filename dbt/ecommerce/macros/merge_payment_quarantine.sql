@@ -5,7 +5,7 @@
     {% set merge_sql %}
 
         MERGE INTO
-            C360_DEV.QUARANTINE.QUARANTINED_RECORDS AS target
+            {{ target.database }}.QUARANTINE.QUARANTINED_RECORDS AS target
 
         USING (
             SELECT

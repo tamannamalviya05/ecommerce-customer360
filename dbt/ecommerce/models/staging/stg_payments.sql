@@ -38,7 +38,7 @@ WITH extracted AS (
         _SOURCE_SYSTEM AS source_system,
         _BATCH_ID AS batch_id
 
-    FROM C360_DEV.BRONZE.RAW_PAYMENTS
+    FROM {{ source('bronze', 'raw_payments') }}
 
 ),
 
