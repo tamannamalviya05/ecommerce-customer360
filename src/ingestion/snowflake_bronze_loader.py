@@ -98,6 +98,12 @@ def get_key_expression(source, alias):
     return expression
 
 
+database = os.environ["SNOWFLAKE_DATABASE"].strip().upper()
+
+if database not in {"C360_DEV", "C360_TEST", "C360_PROD"}:
+    raise ValueError(f"Unsupported Snowflake database: {database}")
+
+
 def load_bronze(source, dry_run=False):
     """Stage records and insert only previously unseen keys."""
     if source not in TABLES:
@@ -124,12 +130,12 @@ def load_bronze(source, dry_run=False):
         password=os.environ["SNOWFLAKE_PASSWORD"],
         warehouse=os.environ["SNOWFLAKE_WAREHOUSE"],
         role=os.environ["SNOWFLAKE_ROLE"],
-        database="C360_DEV",
+        database=database,
         schema="BRONZE",
     )
 
-    target = f"C360_DEV.BRONZE.{table}"
-    stage = f"@C360_DEV.BRONZE.BRONZE_UPLOAD_STAGE/{source}/"
+    target = f"{database}.BRONZE.{table}"
+    stage = f"@{database}.BRONZE.BRONZE_UPLOAD_STAGE/{source}/"
     staged_filename = f"{path.name}.gz"
     staging_key = get_key_expression(source, "s")
     target_key = get_key_expression(source, "t")
@@ -172,7 +178,7 @@ def load_bronze(source, dry_run=False):
                 FILES = ('{staged_filename}')
                 FILE_FORMAT = (
                     FORMAT_NAME =
-                    'C360_DEV.BRONZE.BRONZE_JSONL_FORMAT'
+                    '{database}.BRONZE.BRONZE_JSONL_FORMAT'
                 )
                 ON_ERROR = ABORT_STATEMENT
             """
